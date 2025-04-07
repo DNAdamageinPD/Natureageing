@@ -1,0 +1,87 @@
+# DESCRIPTION -------------------------------------------------------------------------------------------------
+# Author: Daisy Sproviero
+# Date: 13th June 2023
+# Purpose: Quality control for RNA-Seq analysis using DESeq2 and Salmon data
+
+# Load libraries -------------------------------------------------------------------------------------------------
+library(DESeq2)     # Expression normalization
+library(tidyverse)  # For table manipulation
+library(tximport)   # For tximport
+library(ggplot2)    # For plotting
+library(ggrepel)    # For better label positioning in plots
+library(dplyr)      # For data manipulation
+library(data.table) # For data manipulation
+library(stringr)    # For string handling
+library(readxl)     # For reading Excel files
+
+# Set working directory and load annotation data -----------------------------------------------------------
+setwd("/Users/dsprovie/Desktop/BL_salmonfiles/")
+getwd()
+
+# Load tx2gene annotation file
+tx2gene <- read.delim("tx2gene_grch38_ens94.txt")  # Ensure this file path is correct
+
+# List all directories containing data
+samples <- list.files(path = "./", full.names = TRUE, pattern="salmon.transcripts.sf$")
+samples
+
+# Set sample names by removing redundant parts of the filename
+names(samples) <- str_remove(samples, "./") %>% 
+  str_remove(".longRNA-NEBKAP.salmon.transcripts.sf")
+
+# Display sample names
+names(samples)
+
+# Read-in Salmon data using tximport ----------------------------------------------------------
+txi <- tximport(samples, 
+                type="salmon", 
+                tx2gene=tx2gene[, c("tx_id", "ensgene")], 
+                countsFromAbundance="lengthScaledTPM", 
+                ignoreTxVersion = TRUE)
+
+# Write the counts to an object (matrix)
+data <- round(txi$counts)
+
+# Convert data to a data frame
+data <- as.data.frame(data)
+head(data)
+
+# Load metadata --------------------------------------------------------------
+metasummary_GITHUB <- read_excel("~/Desktop/revision/metasummary_GITHUB.xlsx")
+
+# Define sampletype based on metadata
+sampletype <- metasummary_GITHUB$sampletype   # Make sure this is correct
+
+# Create metadata data frame with sample names as row names
+meta2 <- data.frame(row.names = colnames(txi$counts), sampletype)
+View(meta2)
+
+# Normalization with DESeq2 ---------------------------------------------------------
+# Create DESeq2Dataset object
+dds <- DESeqDataSetFromTximport(txi, 
+                                colData = meta2, 
+                                design = ~ sampletype)
+
+# Pre-filtering to remove low counts
+keep <- rowSums(counts(dds)) >= 10
+dds <- dds[keep,]
+
+# Set factor levels for the 'sampletype' variable
+dds$condition <- factor(dds$sampletype, levels = c("PDLRKK2_rs76904798", "PDLRKK2_G2019S", "PDGBA", "PD", "Control"))
+
+# Quality control at the sample level ------------------------------------------
+rld <- vst(dds, blind=TRUE)  # Variance stabilizing transformation
+class(rld)
+rld_mat <- assay(rld)
+
+# Principal component analysis (PCA)
+pca <- prcomp(t(rld_mat))
+
+# Create data frame for PCA plot with metadata and PC values
+df <- cbind(meta2, pca$x)
+
+# Plot PCA
+ggplot(df) + 
+  geom_point(aes(x=PC1, y=PC2, color = sampletype)) + 
+  theme_minimal() +
+  ggtitle("PCA of Samples")

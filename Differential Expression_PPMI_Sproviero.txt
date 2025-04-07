@@ -1,0 +1,192 @@
+# DESCRIPTION -------------------------------------------------------------------------------------------------
+# Author: Daisy Sproviero
+# Date: 13th June 2023
+
+#Purpose: differential expression
+
+## load libraries  ----------------------------------------------------------------------------------------------
+library(DESeq2) #expression normalization
+library(tidyverse) #for table manipulation
+library(tximport) #for tximport
+library(ggplot2)
+library(ggrepel)
+library(dplyr) # for table manipulation
+library(readxl)
+
+# Load the annotation table for GrCh38.
+
+getwd()
+setwd("/Users/dsprovie/Desktop/")
+tx2gene <- read.delim("tx2gene_grch38_ens94.txt")
+head(tx2gene)
+
+## List all directories containing data  
+
+getwd()
+setwd("/Users/dsprovie/Desktop/BL_salmonfiles/")
+samples <- list.files(path = "./", full.names = T, pattern="salmon.transcripts.sf$")
+samples
+names(samples) <- str_replace(samples,".//","") %>% 
+  str_replace(".longRNA-NEBKAP.salmon.transcripts.sf", "")
+names(samples)
+
+#### 2.  Run tximport
+txi <- tximport(samples, 
+                type="salmon", 
+                tx2gene=tx2gene[,c("tx_id", "ensgene")], 
+                countsFromAbundance="lengthScaledTPM",ignoreTxVersion = TRUE)
+
+# Write the counts to an object
+data<-round(txi$counts)
+data <- as.data.frame(data)
+head(data)
+
+## load metadata to match Salmon files
+
+metasummary <- read_excel("~/Desktop/revision/metasummary.xlsx")
+
+# Check that sample names match in both files
+meta<-data.frame(metasummary)
+rownames(meta) <- NULL
+samples<-as.factor(meta$Original)
+txi$counts<-txi$counts[,rownames(meta)]
+ncol(txi$counts)
+all(colnames(txi$counts) == rownames(meta))
+sampletype<-factor(meta$Genetic)
+medications<-factor(meta$Medication)
+Gender<-factor(meta$Sex)
+LEDD<-as.numeric(meta$LEDD)
+
+meta2 = data.frame(row.names = colnames(txi$counts),sampletype,medications,Gender,LEDD)
+View(meta2)
+
+#### 3. Normalization with DESeq2 ####
+# Create DESeq2Dataset object
+
+dds <- DESeqDataSetFromTximport(txi, 
+                                colData = meta2, 
+                                design = ~ sampletype)
+
+# or Create Gender adjusted DESeq2Dataset object:
+
+dds <- DESeqDataSetFromTximport(txi, 
+                                colData = meta2, 
+                                design = ~ sampletype+Gender)
+
+# or Create LEDD adjusted DESeq2Dataset object:
+
+dds <- DESeqDataSetFromTximport(txi, 
+                                colData = meta2, 
+                                design = ~ sampletype + scale(LEDD,center= TRUE))
+
+# or Create medication adjusted DESeq2Dataset object:
+
+dds <- DESeqDataSetFromTximport(txi, 
+                                colData = meta2, 
+                                design = ~ sampletype + medications)
+
+# 4.Pre-filtering
+keep <- rowSums(counts(dds)) >= 10
+dds <- dds[keep,]
+
+#generate size factors with DESeq2
+dds <- estimateSizeFactors(dds)
+
+#Note on factor levels
+dds$condition <- factor(dds$sampletype, levels = c("Control","iPD"))
+
+#or
+
+dds$condition <- factor(dds$sampletype, levels = c("Control","LRRK2_G2019S","GBA"))
+
+#or
+
+dds$condition <- factor(dds$sampletype, levels = c("Control","Prodromal"))
+
+#### 5. Run main fuction "DESeq" ####
+
+dds <- DESeq(dds)
+res <- results(dds)
+
+## 6. DISPERSION
+
+# Plot dispersion estimates
+plotDispEsts(dds)
+
+#### 7. Differential expression testing ####
+
+resultsNames(dds)
+contrast <- c("sampletype","iPD","Control")
+
+#or
+contrast <- c("sampletype","LRRK2_G2019S","GBA","Control")
+
+
+#or
+
+contrast <- c("sampletype","Prodromal","Control")
+
+res_1 <- results(dds, contrast=contrast, alpha = 0.05)
+class(res_1)
+
+#### 8.Independent filtering
+
+# 1. Genes with zero counts in all samples. 
+res_1[which(res_1$baseMean == 0),] %>% 
+  data.frame() %>% 
+
+# 2. Filter genes that have an extreme outlier
+res_1[which(is.na(res_1$pvalue) & 
+              is.na(res_1$padj) &
+              res_1$baseMean > 0),] %>% 
+  data.frame() %>% 
+
+# 3. Filter genes below the low mean threshold
+res_1[which(!is.na(res_1$pvalue) & 
+              is.na(res_1$padj) & 
+              res_1$baseMean > 0),] %>% 
+              data.frame() %>% 
+
+#### 9. Fold change ####
+
+# Save the unshrunken results to compare (so we have them backupped)
+res_1_unshrunken <- res_1
+
+# MA plots
+# Apply fold change shrinkage
+res_1 <- lfcShrink(dds, coef="sampletype_iPD_vs_Control", type = "apeglm")
+
+#or
+res_1 <- lfcShrink(dds, coef="sampletype_LRRK2_G2019S_vs_Control", type = "apeglm")
+
+#or
+
+res_1 <- lfcShrink(dds, coef="sampletype_GBA_vs_Control", type = "apeglm")
+
+#or
+
+res_1 <- lfcShrink(dds, coef="sampletype_Prodomal_vs_Control", type = "apeglm")
+
+# MA plot using unshrunken fold changes
+plotMA(res_1_unshrunken, ylim=c(-2,2))
+# MA plot using shrunken fold changes
+plotMA(res_1, ylim=c(-2,2))
+
+# Create a tibble of results. 
+res_1_tb <- res_1 %>%
+  data.frame() %>%
+  rownames_to_column(var="gene") %>% 
+  as_tibble()
+
+
+# 10. Saving DESeq2 results 
+
+res_1_tb <- bind_cols(res_1_tb, symbol=grch38annot$symbol[match(res_1_tb$gene, grch38annot$ensgene)])
+## Create an empty column to indicate which genes to label
+res_1_tb <- res_1_tb %>% mutate(genelabels = "")
+## Sort by padj values 
+res_1_tb <- res_1_tb %>% arrange(padj)
+setwd("/Users/dsprovie/Desktop")
+openxlsx::write.xlsx(res_1_tb, file = file.path(getwd(), "DE.xlsx"))
+
+

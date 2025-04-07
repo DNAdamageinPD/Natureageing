@@ -1,0 +1,84 @@
+# DESCRIPTION -------------------------------------------------------------------------------------------------
+#Purpose: GSEA
+
+## load libraries  ----------------------------------------------------------------------------------------------
+
+library(data.table)
+library(stringr)
+library(org.Hs.eg.db)
+library(fgsea)
+
+#-------------------------GSEA --------------------------#
+res<-na.omit(DE_PD_CTRL)
+res1<-res[res$baseMean>50,]
+res1$row <- res1$gene
+res1
+
+# Obtaining stats for ranking genes:
+res1$stat = -log10(res1$pvalue)/sign(res1$log2FoldChange)
+
+# Map Ensembl gene IDs to the symbol. First, create a mapping table.
+ens2symbol <- AnnotationDbi::select(org.Hs.eg.db,
+                                    key=res1$row, 
+                                    columns="SYMBOL",
+                                    keytype="ENSEMBL")
+names(ens2symbol)[1] <- "row"
+ens2symbol <- as_tibble(ens2symbol)
+res1 <- merge(data.frame(res1), ens2symbol, by=c("row"))
+res1
+res1 <- data.frame(res1)
+
+# remove the NAs
+res2 <- res1 %>% 
+  dplyr::select(SYMBOL, stat) %>% 
+  na.omit() %>% 
+  distinct() %>% 
+  group_by(SYMBOL) %>% 
+  summarize(stat=mean(stat))
+
+# creating  a named vector [ranked genes]
+ranks <- res2$stat
+names(ranks) <- res2$SYMBOL
+
+# Load the pathway (gene set):
+getwd()
+pathways.hallmark <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/h.all.v7.2.symbols.gmt")
+pathways.hallmark_1 <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/c2.cp.kegg.v7.2.symbols.gmt")
+pathways.hallmark_2 <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/c2.cp.reactome.v7.2.symbols.gmt")
+pathways.hallmark_3 <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/c2.cp.wikipathways.v7.2.symbols.gmt")
+pathways.hallmark_4 <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/c5.go.bp.v2023.2.Hs.symbols.gmt")
+
+#Running fgsea algorithm:
+fgseaRes <- fgseaMultilevel(pathways=pathways.hallmark, stats=ranks)
+fgseaRes_1 <- fgseaMultilevel(pathways=pathways.hallmark_1, stats=ranks)
+fgseaRes_2 <- fgseaMultilevel(pathways=pathways.hallmark_2, stats=ranks)
+fgseaRes_3 <- fgseaMultilevel(pathways=pathways.hallmark_3, stats=ranks)
+fgseaRes_4 <- fgseaMultilevel(pathways=pathways.hallmark_4, stats=ranks)
+
+# Tidy the results:
+fgseaResTidy <- fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES)) # order by normalized enrichment score (NES)
+
+fgseaResTidy_1 <- fgseaRes_1 %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+fgseaResTidy_2 <- fgseaRes_2 %>%
+  as_tibble() %>%
+  arrange(desc(NES)) # order by normalized enrichment score (NES)
+
+fgseaResTidy_3 <- fgseaRes_3 %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+fgseaResTidy_4 <- fgseaRes_4 %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+openxlsx::write.xlsx(fgseaResTidy, file = file.path(getwd(), "GSEA_HALLMARK.xlsx"))
+openxlsx::write.xlsx(fgseaResTidy_1, file = file.path(getwd(), "GSEA_KEGG.xlsx"))
+openxlsx::write.xlsx(fgseaResTidy_2, file = file.path(getwd(), "GSEA_REACTOME.xlsx"))
+openxlsx::write.xlsx(fgseaResTidy_3, file = file.path(getwd(), "GSEA_WIKI.xlsx"))
+
+
