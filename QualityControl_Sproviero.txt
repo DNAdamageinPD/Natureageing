@@ -3,6 +3,7 @@
 # Date: 13th June 2023
 # Purpose: Quality control for RNA-Seq analysis using DESeq2 and Salmon data
 
+
 # Load libraries -------------------------------------------------------------------------------------------------
 library(DESeq2)     # Expression normalization
 library(tidyverse)  # For table manipulation
