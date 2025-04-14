@@ -1,0 +1,253 @@
+setwd("D:/Toshiba2024/Descargas/MJFF Parkinson/Github")
+
+library(readxl)
+
+#Read gene length file
+id_length = read_excel("GenelengthAll.xlsx")
+
+#Read files from DeSeq2
+
+library("dplyr")                                                
+library("plyr")                                                 
+library("readr")  
+library("readxl")
+
+
+# Get the list of .xlsx files
+file_paths <- list.files(path = "D:/Toshiba2024/Descargas/MJFF Parkinson/Github/PDSeverityGroups",
+                          pattern = "*.xlsx",
+                          full.names = TRUE)
+
+# Read the Excel files and store them in a list
+data_list <- lapply(file_paths, read_excel)
+
+# Find the maximum number of rows among all data frames
+max_rows <- max(sapply(data_list, nrow))
+
+# Fill the data frames so that they have the same number of rows
+data_list_filled <- lapply(data_list, function(df) {
+  if (nrow(df) < max_rows) {
+    extra_rows <- max_rows - nrow(df)
+    df <- bind_rows(df, data.frame(matrix(NA, nrow = extra_rows, ncol = ncol(df))))
+  }
+  return(df)
+})
+
+# Combine the data frames side by side
+combined_data <- do.call(cbind, data_list_filled)                                                 
+  
+
+#openxlsx::write.xlsx(combined_data, file = file.path(getwd(), "Data.xlsx"))
+
+#Select columns
+
+data = combined_data
+id_length<-id_length[,c(1,9)]
+
+#GS column with gene symbol , adjp= column with adj p value
+GS=1
+adjp=8
+affy<-data[,c(paste(GS):paste(adjp))]
+gene=colnames(affy)
+affyLength<-merge(affy,id_length, by.x=paste(gene[(1)]), 
+by.y="GeneENS", all.x=F, all.y=F)
+affyLength$log10<-log10(affyLength$Lenght)
+colnames(affyLength)[3] = "lfc"
+colnames(affyLength)[6] = "adjpvalue"
+
+
+
+tiff(file = paste("Severity_ONLY_PD.tiff"), width = 3500, height = 3500, units = "px", res = 600)
+par(mfrow=c(2,2))
+
+
+#Mild_BL_ONLYPD
+
+affyHippoUp<-affyLength[affyLength$lfc >=i,]
+affyHippoUp<-affyHippoUp[affyHippoUp$adjpvalue <=k,]
+
+affyHippoDown<-affyLength[affyLength$lfc <=-i,]
+affyHippoDown<-affyHippoDown[affyHippoDown$adjpvalue <=k,]
+
+affyHippoUp =na.omit(affyHippoUp)
+affyHippoDown =na.omit(affyHippoDown)
+
+a= dim(affyHippoUp)[1]
+b= dim(affyHippoDown)[1]
+a1<-affyHippoUp
+mean (a1$Lenght)
+meanup=round(mean (a1$Lenght), digit=0)
+shapiro.test(a1$Lenght)
+shapiro.test(a1$log10)
+
+b1<-affyHippoDown
+mean (b1$Lenght)
+meandown=round(mean (b1$Lenght), digit=0)
+shapiro.test(b1$Lenght)
+shapiro.test(b1$log10)
+
+w=wilcox.test(a1$log10,b1$log10, )
+w=round(mean (w$p.value), digit=7)
+wilcox.test(a1$Lenght,b1$Lenght, )
+
+#Plot
+plot(density(affyHippoUp$log10),xlab= "Log10 gene length",col="red",ylim=c(0,1.5),xlim=c(2,7),lwd=2,lty = 1,main = paste("DEG Mild_BL_ONLY PD Log2FC =",i," FDR< ",k),cex.main = 0.8)
+lines(density(affyHippoDown$log10),col="darkgreen",lwd=2)
+legend("topleft",c(paste("PD Up, number ",a,"mean bp", meanup), paste("PD Down, number ",b,"mean bp",meandown),paste("p.Wilcoxon",w)), pch=c(19,19,19),
+col = c("red","darkgreen","black"), cex = 0.7)
+
+
+
+#Mild_V08_ONLYPD
+
+
+#GS column with gene symbol , adjp= column with adj p value
+GS=17
+adjp=24
+affy<-data[,c(paste(GS):paste(adjp))]
+gene=colnames(affy)
+affyLength<-merge(affy,id_length, by.x=paste(gene[(1)]), 
+by.y="GeneENS", all.x=F, all.y=F)
+affyLength$log10<-log10(affyLength$Lenght)
+colnames(affyLength)[3] = "lfc"
+colnames(affyLength)[6] = "adjpvalue"
+
+
+
+affyHippoUp<-affyLength[affyLength$lfc >=i,]
+affyHippoUp<-affyHippoUp[affyHippoUp$adjpvalue <=k,]
+
+affyHippoDown<-affyLength[affyLength$lfc <=-i,]
+affyHippoDown<-affyHippoDown[affyHippoDown$adjpvalue <=k,]
+
+affyHippoUp =na.omit(affyHippoUp)
+affyHippoDown =na.omit(affyHippoDown)
+
+a= dim(affyHippoUp)[1]
+b= dim(affyHippoDown)[1]
+a1<-affyHippoUp
+mean (a1$Lenght)
+meanup=round(mean (a1$Lenght), digit=0)
+shapiro.test(a1$Lenght)
+shapiro.test(a1$log10)
+
+b1<-affyHippoDown
+mean (b1$Lenght)
+meandown=round(mean (b1$Lenght), digit=0)
+shapiro.test(b1$Lenght)
+shapiro.test(b1$log10)
+
+w=wilcox.test(a1$log10,b1$log10, )
+w=round(mean (w$p.value), digit=7)
+wilcox.test(a1$Lenght,b1$Lenght, )
+
+#Plot
+plot(density(affyHippoUp$log10),xlab= "Log10 gene length",col="red",ylim=c(0,1.5),xlim=c(2,7),lwd=2,lty = 1,main = paste("DEG Mild_V08_ONLY PD Log2FC =",i," FDR< ",k),cex.main = 0.8)
+lines(density(affyHippoDown$log10),col="darkgreen",lwd=2)
+legend("topleft",c(paste("PD Up, number ",a,"mean bp", meanup), paste("PD Down, number ",b,"mean bp",meandown),paste("p.Wilcoxon",w)), pch=c(19,19,19),
+col = c("red","darkgreen","black"), cex = 0.7)
+
+
+
+#Severe_BL_ONLYPD
+
+
+#GS column with gene symbol , adjp= column with adj p value
+GS=25
+adjp=32
+affy<-data[,c(paste(GS):paste(adjp))]
+gene=colnames(affy)
+affyLength<-merge(affy,id_length, by.x=paste(gene[(1)]), 
+by.y="GeneENS", all.x=F, all.y=F)
+affyLength$log10<-log10(affyLength$Lenght)
+colnames(affyLength)[3] = "lfc"
+colnames(affyLength)[6] = "adjpvalue"
+
+
+
+affyHippoUp<-affyLength[affyLength$lfc >=i,]
+affyHippoUp<-affyHippoUp[affyHippoUp$adjpvalue <=k,]
+
+affyHippoDown<-affyLength[affyLength$lfc <=-i,]
+affyHippoDown<-affyHippoDown[affyHippoDown$adjpvalue <=k,]
+
+affyHippoUp =na.omit(affyHippoUp)
+affyHippoDown =na.omit(affyHippoDown)
+
+a= dim(affyHippoUp)[1]
+b= dim(affyHippoDown)[1]
+a1<-affyHippoUp
+mean (a1$Lenght)
+meanup=round(mean (a1$Lenght), digit=0)
+shapiro.test(a1$Lenght)
+shapiro.test(a1$log10)
+
+b1<-affyHippoDown
+mean (b1$Lenght)
+meandown=round(mean (b1$Lenght), digit=0)
+shapiro.test(b1$Lenght)
+shapiro.test(b1$log10)
+
+w=wilcox.test(a1$log10,b1$log10, )
+w=round(mean (w$p.value), digit=7)
+wilcox.test(a1$Lenght,b1$Lenght, )
+
+#Plot
+plot(density(affyHippoUp$log10),xlab= "Log10 gene length",col="red",ylim=c(0,1.5),xlim=c(2,7),lwd=2,lty = 1,main = paste("DEG Severe_BL_ONLY PD Log2FC =",i," FDR< ",k),cex.main = 0.8)
+lines(density(affyHippoDown$log10),col="darkgreen",lwd=2)
+legend("topleft",c(paste("PD Up, number ",a,"mean bp", meanup), paste("PD Down, number ",b,"mean bp",meandown),paste("p.Wilcoxon",w)), pch=c(19,19,19),
+col = c("red","darkgreen","black"), cex = 0.7)
+
+
+#Severe_V08_ONLYPD
+
+#GS column with gene symbol , adjp= column with adj p value
+GS=41
+adjp=48
+affy<-data[,c(paste(GS):paste(adjp))]
+gene=colnames(affy)
+affyLength<-merge(affy,id_length, by.x=paste(gene[(1)]), 
+by.y="GeneENS", all.x=F, all.y=F)
+affyLength$log10<-log10(affyLength$Lenght)
+colnames(affyLength)[3] = "lfc"
+colnames(affyLength)[6] = "adjpvalue"
+
+
+
+affyHippoUp<-affyLength[affyLength$lfc >=i,]
+affyHippoUp<-affyHippoUp[affyHippoUp$adjpvalue <=k,]
+
+affyHippoDown<-affyLength[affyLength$lfc <=-i,]
+affyHippoDown<-affyHippoDown[affyHippoDown$adjpvalue <=k,]
+
+affyHippoUp =na.omit(affyHippoUp)
+affyHippoDown =na.omit(affyHippoDown)
+
+a= dim(affyHippoUp)[1]
+b= dim(affyHippoDown)[1]
+a1<-affyHippoUp
+mean (a1$Lenght)
+meanup=round(mean (a1$Lenght), digit=0)
+shapiro.test(a1$Lenght)
+shapiro.test(a1$log10)
+
+b1<-affyHippoDown
+mean (b1$Lenght)
+meandown=round(mean (b1$Lenght), digit=0)
+shapiro.test(b1$Lenght)
+shapiro.test(b1$log10)
+
+w=wilcox.test(a1$log10,b1$log10, )
+w=round(mean (w$p.value), digit=7)
+wilcox.test(a1$Lenght,b1$Lenght, )
+
+#Plot
+plot(density(affyHippoUp$log10),xlab= "Log10 gene length",col="red",ylim=c(0,1.5),xlim=c(2,7),lwd=2,lty = 1,main = paste("DEG Severe_V08_ONLY PD Log2FC =",i," FDR< ",k),cex.main = 0.8)
+lines(density(affyHippoDown$log10),col="darkgreen",lwd=2)
+legend("topleft",c(paste("PD Up, number ",a,"mean bp", meanup), paste("PD Down, number ",b,"mean bp",meandown),paste("p.Wilcoxon",w)), pch=c(19,19,19),
+col = c("red","darkgreen","black"), cex = 0.7)
+
+
+
+
+dev.off()
