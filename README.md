@@ -62,11 +62,10 @@ This project is licensed under the MIT License.
 ## Contact
 Principal Investigator
 Pier Giorgio Mastroberardino, PhD
-Email: piergiorgio.mastroberardino@ifom.eu
+Email: piergiorgio.mastroberardino@univaq.it
 
 ## Affiliation
-IFOM - The FIRC Institute of Molecular Oncology
-Milan, Italy
+Department of Life, Health, and Environmental Sciences, University of L'Aquila, L'Aquila, Italy.
 
 For scientific inquiries about this project, please contact Dr. Mastroberardino directly. For technical issues with the code, please open an issue in this repository.
 
