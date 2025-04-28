@@ -52,6 +52,7 @@ metasummary_GITHUB <- read_excel("~/Desktop/revision/metasummary_GITHUB.xlsx")
 
 # Define sampletype based on metadata
 sampletype <- metasummary_GITHUB$sampletype   # Make sure this is correct
+stopifnot(all(colnames(txi$counts) == rownames(meta2)))
 
 # Create metadata data frame with sample names as row names
 meta2 <- data.frame(row.names = colnames(txi$counts), sampletype)
