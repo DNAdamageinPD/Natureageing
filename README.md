@@ -1,10 +1,10 @@
-# # Gene Length Analysis in Parkinson's Disease by Severity
+# # Transcriptomic and Gene Length Analysis in Parkinson's Disease by Severity
 
-This repository contains R scripts for analyzing gene length distributions in differential expression studies related to Parkinson's Disease (PD).
+This repository contains R scripts for RNA-seq and gene length analysis in differential expression studies related to Parkinson's Disease (PD).
 
 ## Description
 
-This R script performs comparative analysis of gene lengths in Parkinson's disease patients classified by disease severity (mild vs severe) and timepoint (baseline vs V08), including:
+This R script performs comparative analysis of gene lengths in Parkinson's disease patients, classified by disease severity (mild vs severe) and timepoint (baseline vs V08), including:
 
 1. Reading and processing gene length information from Excel files
 2. Analyzing differential expression results from DESeq2 outputs.
@@ -69,4 +69,4 @@ Department of Life, Health, and Environmental Sciences, University of L'Aquila, 
 
 For scientific inquiries about this project, please contact Dr. Mastroberardino directly. For technical issues with the code, please open an issue in this repository.
 
-
+Note: The metadata file is not included in this repository due to patient privacy concerns. These data can be requested from the PPMI website.
