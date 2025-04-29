@@ -43,43 +43,27 @@ names(ranks) <- res2$SYMBOL
 
 # Load the pathway (gene set):
 getwd()
-pathways.hallmark <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/h.all.v7.2.symbols.gmt")
-pathways.hallmark_1 <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/c2.cp.kegg.v7.2.symbols.gmt")
-pathways.hallmark_2 <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/c2.cp.reactome.v7.2.symbols.gmt")
-pathways.hallmark_3 <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/c2.cp.wikipathways.v7.2.symbols.gmt")
-pathways.hallmark_4 <- gmtPathways("/Users/dsprovie/Desktop/PPMI/GSEA/c5.go.bp.v2023.2.Hs.symbols.gmt")
+pathways <- list(
+  HALLMARK    = gmtPathways(file.path(gmt_dir, "h.all.v7.2.symbols.gmt")),
+  KEGG        = gmtPathways(file.path(gmt_dir, "c2.cp.kegg.v7.2.symbols.gmt")),
+  REACTOME    = gmtPathways(file.path(gmt_dir, "c2.cp.reactome.v7.2.symbols.gmt")),
+  WIKIPATHWAY = gmtPathways(file.path(gmt_dir, "c2.cp.wikipathways.v7.2.symbols.gmt")),
+  GOBP        = gmtPathways(file.path(gmt_dir, "c5.go.bp.v2023.2.Hs.symbols.gmt"))
+)
 
-#Running fgsea algorithm:
-fgseaRes <- fgseaMultilevel(pathways=pathways.hallmark, stats=ranks)
-fgseaRes_1 <- fgseaMultilevel(pathways=pathways.hallmark_1, stats=ranks)
-fgseaRes_2 <- fgseaMultilevel(pathways=pathways.hallmark_2, stats=ranks)
-fgseaRes_3 <- fgseaMultilevel(pathways=pathways.hallmark_3, stats=ranks)
-fgseaRes_4 <- fgseaMultilevel(pathways=pathways.hallmark_4, stats=ranks)
+# Run GSEA ------------------------------------------------------------------------------------------
+gsea_results <- lapply(pathways, function(pw) {
+  fgseaMultilevel(pathways = pw, stats = ranks)
+})
 
-# Tidy the results:
-fgseaResTidy <- fgseaRes %>%
-  as_tibble() %>%
-  arrange(desc(NES)) # order by normalized enrichment score (NES)
+# Tidy and write results to Excel -------------------------------------------------------------------
+output_dir <- getwd()
+walk2(names(gsea_results), gsea_results, function(name, res) {
+  tidy_res <- res %>%
+    as_tibble() %>%
+    arrange(desc(NES))
+  write.xlsx(tidy_res, file = file.path(output_dir, paste0("GSEA_", name, ".xlsx")))
+})
 
-fgseaResTidy_1 <- fgseaRes_1 %>%
-  as_tibble() %>%
-  arrange(desc(NES))
-
-fgseaResTidy_2 <- fgseaRes_2 %>%
-  as_tibble() %>%
-  arrange(desc(NES)) # order by normalized enrichment score (NES)
-
-fgseaResTidy_3 <- fgseaRes_3 %>%
-  as_tibble() %>%
-  arrange(desc(NES))
-
-fgseaResTidy_4 <- fgseaRes_4 %>%
-  as_tibble() %>%
-  arrange(desc(NES))
-
-openxlsx::write.xlsx(fgseaResTidy, file = file.path(getwd(), "GSEA_HALLMARK.xlsx"))
-openxlsx::write.xlsx(fgseaResTidy_1, file = file.path(getwd(), "GSEA_KEGG.xlsx"))
-openxlsx::write.xlsx(fgseaResTidy_2, file = file.path(getwd(), "GSEA_REACTOME.xlsx"))
-openxlsx::write.xlsx(fgseaResTidy_3, file = file.path(getwd(), "GSEA_WIKI.xlsx"))
-
+cat(" GSEA analysis complete. Results saved as Excel files.\n")
 
