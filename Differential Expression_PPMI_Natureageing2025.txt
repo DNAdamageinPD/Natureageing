@@ -41,11 +41,9 @@ data<-round(txi$counts)
 data <- as.data.frame(data)
 head(data)
 
-## load metadata to match Salmon files
+## load metadata and check sample names match
 
 metasummary <- read_excel("~/Desktop/revision/metasummary.xlsx")
-
-# Check that sample names match in both files
 meta<-data.frame(metasummary)
 rownames(meta) <- NULL
 samples<-as.factor(meta$Original)
@@ -57,10 +55,13 @@ medications<-factor(meta$Medication)
 Gender<-factor(meta$Sex)
 LEDD<-as.numeric(meta$LEDD)
 
+# Match sample names
+stopifnot(all(colnames(txi$counts) == rownames(meta)))
+
 meta2 = data.frame(row.names = colnames(txi$counts),sampletype,medications,Gender,LEDD)
 View(meta2)
 
-#### 3. Normalization with DESeq2 ####
+#### 3. DESeq2 Normalization ####
 # Create DESeq2Dataset object
 
 dds <- DESeqDataSetFromTximport(txi, 
