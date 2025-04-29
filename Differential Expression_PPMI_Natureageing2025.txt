@@ -63,28 +63,11 @@ View(meta2)
 
 #### 3. DESeq2 Normalization ####
 # Create DESeq2Dataset object
+# example adjust for gender:
 
 dds <- DESeqDataSetFromTximport(txi, 
                                 colData = meta2, 
-                                design = ~ sampletype)
-
-# or Create Gender adjusted DESeq2Dataset object:
-
-dds <- DESeqDataSetFromTximport(txi, 
-                                colData = meta2, 
-                                design = ~ sampletype+Gender)
-
-# or Create LEDD adjusted DESeq2Dataset object:
-
-dds <- DESeqDataSetFromTximport(txi, 
-                                colData = meta2, 
-                                design = ~ sampletype + scale(LEDD,center= TRUE))
-
-# or Create medication adjusted DESeq2Dataset object:
-
-dds <- DESeqDataSetFromTximport(txi, 
-                                colData = meta2, 
-                                design = ~ sampletype + medications)
+                                design = ~ sampletype+Gender) 
 
 # 4.Pre-filtering
 keep <- rowSums(counts(dds)) >= 10
@@ -96,13 +79,6 @@ dds <- estimateSizeFactors(dds)
 #Note on factor levels
 dds$condition <- factor(dds$sampletype, levels = c("Control","iPD"))
 
-#or
-
-dds$condition <- factor(dds$sampletype, levels = c("Control","LRRK2_G2019S","GBA"))
-
-#or
-
-dds$condition <- factor(dds$sampletype, levels = c("Control","Prodromal"))
 
 #### 5. Run main fuction "DESeq" ####
 
@@ -118,14 +94,6 @@ plotDispEsts(dds)
 
 resultsNames(dds)
 contrast <- c("sampletype","iPD","Control")
-
-#or
-contrast <- c("sampletype","LRRK2_G2019S","GBA","Control")
-
-
-#or
-
-contrast <- c("sampletype","Prodromal","Control")
 
 res_1 <- results(dds, contrast=contrast, alpha = 0.05)
 class(res_1)
@@ -156,17 +124,6 @@ res_1_unshrunken <- res_1
 # MA plots
 # Apply fold change shrinkage
 res_1 <- lfcShrink(dds, coef="sampletype_iPD_vs_Control", type = "apeglm")
-
-#or
-res_1 <- lfcShrink(dds, coef="sampletype_LRRK2_G2019S_vs_Control", type = "apeglm")
-
-#or
-
-res_1 <- lfcShrink(dds, coef="sampletype_GBA_vs_Control", type = "apeglm")
-
-#or
-
-res_1 <- lfcShrink(dds, coef="sampletype_Prodomal_vs_Control", type = "apeglm")
 
 # MA plot using unshrunken fold changes
 plotMA(res_1_unshrunken, ylim=c(-2,2))
