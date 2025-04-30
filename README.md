@@ -16,6 +16,8 @@ Performs length-scaled TPM normalization using tximport
 Constructs DESeq2 object and adjusts for covariates (e.g., gender)
 Runs DESeq2, filters and shrinks log fold changes
 Outputs differential expression results (DE.xlsx)
+
+
 2. 2_gsea_analysis.R
 
 Key Steps:
@@ -25,6 +27,8 @@ Maps Ensembl IDs to gene symbols using org.Hs.eg.db
 Loads hallmark, KEGG, Reactome, WikiPathways, and GO gene sets
 Performs GSEA using the fgsea package
 Saves results for each gene set collection to Excel files
+
+
 3. 3_gene_length_plotting_PD_severity.R
 
 Key Steps:
