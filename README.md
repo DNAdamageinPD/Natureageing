@@ -4,21 +4,39 @@ This repository contains R scripts for RNA-seq and gene length analysis in diffe
 
 ## Description
 
-This R script performs comparative analysis of gene lengths in Parkinson's disease patients, classified by disease severity (mild vs severe) and timepoint (baseline vs V08), including:
+Script Overview
 
-1. Reading and processing gene length information from Excel files
-2. Analyzing differential expression results from DESeq2 outputs.
-3. Comparing gene length distributions between:
-   - Upregulated and downregulated genes
-4. Generating publication-quality figures and statistical reports
+1. 1_deseq2_analysis.R
+Purpose: Load Salmon quantifications, perform normalization using DESeq2, and identify differentially expressed genes (DEGs) between sample groups (e.g., iPD vs. Control).
 
-## Key Features
+Key Steps:
 
-- Comparative analysis of gene lengths in differentially expressed genes
-- Statistical testing including:
-  - Shapiro-Wilk test for normality
-  - Wilcoxon rank-sum test for group comparisons
-- Visualization of log10 gene length distributions
+Loads transcript-to-gene annotation and metadata
+Performs length-scaled TPM normalization using tximport
+Constructs DESeq2 object and adjusts for covariates (e.g., gender)
+Runs DESeq2, filters and shrinks log fold changes
+Outputs differential expression results (DE.xlsx)
+2. 2_gsea_analysis.R
+
+Key Steps:
+
+Calculates gene-level statistics from p-values and log2FC
+Maps Ensembl IDs to gene symbols using org.Hs.eg.db
+Loads hallmark, KEGG, Reactome, WikiPathways, and GO gene sets
+Performs GSEA using the fgsea package
+Saves results for each gene set collection to Excel files
+3. 3_gene_length_plotting_PD_severity.R
+
+Key Steps:
+
+Loads precomputed DE results and gene lengths
+Merges gene length data with DEGs
+Splits genes into up/downregulated sets
+Comparing gene length distributions between:
+   - Upregulated and downregulated genes (e.g., Wilcoxon, Shapiro)
+Generates density plots of log10 gene length for each condition
+
+
 
 ## Requirements
 
@@ -26,16 +44,31 @@ This R script performs comparative analysis of gene lengths in Parkinson's disea
 - R (version 4.0 or higher)
 
 ### R Packages
-- `readxl`
-- `dplyr`
-- `plyr`
-- `readr`
+
+-DESeq2, tximport, tidyverse, ggplot2, ggrepel, dplyr, readxl, readr, plyr
+-fgsea, org.Hs.eg.db, AnnotationDbi, openxlsx, plyr, data.table
+
 
 Install required packages with:
 ```R
-install.packages(c("readxl", "dplyr", "plyr", "readr"))
+
+install.packages(c("tidyverse", "ggplot2", "readxl", "openxlsx", "data.table", "plyr", "readr", "dplyr"))
+BiocManager::install(c("DESeq2", "tximport", "fgsea", "org.Hs.eg.db", "AnnotationDbi"))
+
 
 ### File Structure
+
+.
+├── 1_deseq2_analysis.R
+├── 2_gsea_analysis.R
+├── 3_gene_length_plotting_PD_severity.R
+├── 4_gene_length_plotting_PD_severity_alt.R
+├── tx2gene_grch38_ens94.txt
+├── metasummary.xlsx
+├── GenelengthAll.xlsx
+├── PDSeverityGroups/      # Contains DESeq2 results as .xlsx files
+└── outputs/
+
 
 PD_Severity_Analysis/
 ├── Data/
@@ -46,8 +79,9 @@ PD_Severity_Analysis/
     └── PD_GeneLength_Analysis.R    # Main analysis script
 
 ### Output
-Output
-The script generates high-resolution TIFF format plots (3500×3500 px, 600 dpi) showing:
+DE.xlsx: Final DESeq2 results with Ensembl and gene symbols
+
+GSEA_*.xlsx: GSEA results for each gene set collection
 
 Density distributions of log10 gene lengths
 
