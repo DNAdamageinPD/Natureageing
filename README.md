@@ -105,6 +105,9 @@ Email: piergiorgio.mastroberardino@univaq.it
 ## Affiliation
 Department of Life, Health, and Environmental Sciences, University of L'Aquila, L'Aquila, Italy.
 
+[![DOI](https://zenodo.org/badge/DOI/<record‑ID>.svg)](https://doi.org/<record‑DOI>)
+
+
 For scientific inquiries about this project, please contact Dr. Mastroberardino directly. For technical issues with the code, please open an issue in this repository.
 
 Note: The metadata file is not included in this repository due to patient privacy concerns. These data can be requested from the PPMI website.
